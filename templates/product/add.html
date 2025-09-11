@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}Tambah Produk{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Tambah Produk Baru</h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="form-group">
+                            <label for="nama">Nama Produk</label>
+                            <input type="text" class="form-control" id="nama" name="nama" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="harga">Harga (Rp)</label>
+                            <input type="number" class="form-control" id="harga" name="harga" min="0" step="0.01" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="stok_pusat">Stok Pusat</label>
+                            <input type="number" class="form-control" id="stok_pusat" name="stok_pusat" min="0" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="persentase_komisi">Persentase Komisi (%)</label>
+                            <input type="number" class="form-control" id="persentase_komisi" name="persentase_komisi" min="0" max="100" step="0.01" required>
+                            <small class="form-text text-muted">Komisi yang akan diberikan kepada outlet untuk produk ini</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary">Simpan</button>
+                            <a href="{{ url_for('product_list') }}" class="btn btn-secondary">Batal</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-warning text-white">
+                <h3 class="mb-0"><i class="fas fa-edit"></i> Edit User</h3>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="username" name="username" 
+                               value="{{ user.username }}" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="role" class="form-label">Role</label>
+                        <select class="form-select" id="role" name="role" required>
+                            <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>Admin</option>
+                            <option value="karyawan" {% if user.role == 'karyawan' %}selected{% endif %}>Karyawan Distribusi</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password Baru (Opsional)</label>
+                        <input type="password" class="form-control" id="password" name="password" 
+                               placeholder="Kosongkan jika tidak ingin mengubah password">
+                        <div class="form-text">Minimal 6 karakter. Biarkan kosong jika tidak ingin mengubah password.</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6 class="card-title">Informasi User</h6>
+                                <p class="card-text mb-1">ID User: <strong>{{ user.id }}</strong></p>
+                                <p class="card-text">Dibuat: <strong>{{ user.get('created_at', 'Tidak diketahui') }}</strong></p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('user_list') }}" class="btn btn-secondary me-md-2">
+                            <i class="fas fa-arrow-left"></i> Kembali
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Update User
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

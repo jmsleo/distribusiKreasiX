@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Distribusi Produk</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='style.css') }}" rel="stylesheet">
+</head>
+<body>
+    {% if request.endpoint and request.endpoint != 'login' %}
+        <!-- Mobile Toggle Button -->
+        <button class="mobile-toggle d-lg-none" onclick="toggleSidebar()" aria-label="Toggle Navigation">
+            <i class="fas fa-bars"></i>
+        </button>
+
+        <!-- Sidebar Overlay for Mobile -->
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+        <!-- Sidebar Navigation -->
+        <div class="sidebar" id="sidebar">
+            <!-- Logo Area -->
+            <div class="logo-container">
+                <div class="logo-placeholder">
+                    <i class="fas fa-truck"></i>
+                    <span>Sistem Distribusi</span>
+                </div>
+            </div>
+            
+            <!-- Navigation Menu -->
+            <nav class="sidebar-nav">
+                {% if 'user_id' in session %}
+                    {% if session['role'] == 'admin' %}
+                        <!-- Admin Menu -->
+                        <a href="{{ url_for('index') }}" 
+                           class="nav-item {{ 'active' if request.endpoint == 'index' else '' }}"
+                           onclick="closeSidebarOnMobile()">
+                            <i class="fas fa-home"></i>
+                            <span>Dashboard</span>
+                        </a>
+                        <a href="{{ url_for('outlet_list') }}" 
+                           class="nav-item {{ 'active' if request.endpoint in ['outlet_list', 'outlet_add', 'outlet_edit'] else '' }}"
+                           onclick="closeSidebarOnMobile()">
+                            <i class="fas fa-store"></i>
+                            <span>Outlet</span>
+                        </a>
+                        <a href="{{ url_for('product_list') }}" 
+                           class="nav-item {{ 'active' if request.endpoint in ['product_list', 'product_add', 'product_edit'] else '' }}"
+                           onclick="closeSidebarOnMobile()">
+                            <i class="fas fa-box"></i>
+                            <span>Produk</span>
+                        </a>
+                        <a href="{{ url_for('distribution_list') }}" 
+                           class="nav-item {{ 'active' if request.endpoint in ['distribution_list', 'distribution_add'] else '' }}"
+                           onclick="closeSidebarOnMobile()">
+                            <i class="fas fa-truck-loading"></i>
+                            <span>Distribusi</span>
+                        </a>
+                        <a href="{{ url_for('sales_list') }}" 
+                           class="nav-item {{ 'active' if request.endpoint in ['sales_list', 'sales_add'] else '' }}"
+                           onclick="closeSidebarOnMobile()">
+                            <i class="fas fa-shopping-cart"></i>
+                            <span>Penjualan</span>
+                        </a>
+                        <a href="{{ url_for('payment_list') }}" 
+                           class="nav-item {{ 'active' if request.endpoint in ['payment_list', 'payment_add'] else '' }}"
+                           onclick="closeSidebarOnMobile()">
+                            <i class="fas fa-money-bill-wave"></i>
+                            <span>Pembayaran</span>
+                        </a>
+                        <a href="{{ url_for('report') }}" 
+                           class="nav-item {{ 'active' if request.endpoint == 'report' else '' }}"
+                           onclick="closeSidebarOnMobile()">
+                            <i class="fas fa-chart-bar"></i>
+                            <span>Laporan</span>
+                        </a>
+                        <a href="{{ url_for('user_list') }}" 
+                           class="nav-item {{ 'active' if request.endpoint in ['user_list', 'user_add', 'user_edit'] else '' }}"
+                           onclick="closeSidebarOnMobile()">
+                            <i class="fas fa-users"></i>
+                            <span>User</span>
+                        </a>
+                    {% else %}
+                        <!-- Employee Menu -->
+                        <a href="{{ url_for('karyawan_dashboard') }}" 
+                           class="nav-item {{ 'active' if request.endpoint == 'karyawan_dashboard' else '' }}"
+                           onclick="closeSidebarOnMobile()">
+                            <i class="fas fa-home"></i>
+                            <span>Dashboard</span>
+                        </a>
+                        <a href="{{ url_for('distribution_list') }}" 
+                           class="nav-item {{ 'active' if request.endpoint in ['distribution_list', 'distribution_add'] else '' }}"
+                           onclick="closeSidebarOnMobile()">
+                            <i class="fas fa-truck-loading"></i>
+                            <span>Distribusi</span>
+                        </a>
+                        <a href="{{ url_for('sales_list') }}" 
+                           class="nav-item {{ 'active' if request.endpoint in ['sales_list', 'sales_add'] else '' }}"
+                           onclick="closeSidebarOnMobile()">
+                            <i class="fas fa-shopping-cart"></i>
+                            <span>Penjualan</span>
+                        </a>
+                    {% endif %}
+                {% endif %}
+            </nav>
+            
+            <!-- User Info & Logout -->
+            {% if 'user_id' in session %}
+            <div class="user-section">
+                <div class="user-profile">
+                    <i class="fas fa-user-circle"></i>
+                    <div>
+                        <span class="username">{{ session['username'] }}</span>
+                        <span class="role">{{ session['role'] }}</span>
+                    </div>
+                </div>
+                <a href="{{ url_for('logout') }}" class="logout-btn" title="Logout" onclick="closeSidebarOnMobile()">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    {% endif %}
+
+    <!-- Main Content (dipakai untuk semua halaman, termasuk login) -->
+    <div class="main-content {% if request.endpoint == 'login' %}login-page{% endif %}">
+        <!-- Top Header (only for non-login pages) -->
+        {% if request.endpoint and request.endpoint != 'login' %}
+        <div class="top-header">
+            <h1 class="page-title">{% block page_title %}Dashboard{% endblock %}</h1>
+        </div>
+        {% endif %}
+
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <div class="content-wrapper {% if request.endpoint != 'login' %}container-fluid{% endif %}">
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            
+            if (sidebar && overlay) {
+                sidebar.classList.toggle('show');
+                overlay.classList.toggle('show');
+                
+                // Prevent body scroll when sidebar is open on mobile
+                if (sidebar.classList.contains('show')) {
+                    document.body.style.overflow = 'hidden';
+                } else {
+                    document.body.style.overflow = '';
+                }
+            }
+        }
+
+        function closeSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            
+            if (sidebar && overlay) {
+                sidebar.classList.remove('show');
+                overlay.classList.remove('show');
+                document.body.style.overflow = '';
+            }
+        }
+
+        function closeSidebarOnMobile() {
+            // Only close sidebar on mobile/tablet screens
+            if (window.innerWidth <= 992) {
+                closeSidebar();
+            }
+        }
+
+        // Close sidebar when clicking outside on mobile
+        document.addEventListener('click', function(event) {
+            const sidebar = document.getElementById('sidebar');
+            const toggle = document.querySelector('.mobile-toggle');
+            const overlay = document.getElementById('sidebarOverlay');
+            
+            if (window.innerWidth <= 992 && 
+                sidebar && !sidebar.contains(event.target) && 
+                toggle && !toggle.contains(event.target) && 
+                sidebar.classList.contains('show')) {
+                closeSidebar();
+            }
+        });
+
+        // Handle window resize
+        window.addEventListener('resize', function() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            
+            // Close sidebar and overlay when switching to desktop view
+            if (window.innerWidth > 992 && sidebar && overlay) {
+                sidebar.classList.remove('show');
+                overlay.classList.remove('show');
+                document.body.style.overflow = '';
+            }
+        });
+
+        // Improve touch scrolling on iOS
+        document.addEventListener('touchstart', function() {}, {passive: true});
+
+        // Prevent zoom on double tap for better mobile experience
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function (event) {
+            const now = (new Date()).getTime();
+            if (now - lastTouchEnd <= 300) {
+                event.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+    </script>
+</body>
+</html>

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h3 class="mb-0"><i class="fas fa-plus"></i> Tambah Distribusi Baru</h3>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="outlet_id" class="form-label">Outlet</label>
+                        <select class="form-select" id="outlet_id" name="outlet_id" required>
+                            <option value="">Pilih Outlet</option>
+                            {% for outlet in outlets %}
+                            <option value="{{ outlet.id }}">{{ outlet.nama }} - {{ outlet.lokasi }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="product_id" class="form-label">Produk</label>
+                        <select class="form-select" id="product_id" name="product_id" required>
+                            <option value="">Pilih Produk</option>
+                            {% for product in products %}
+                            <option value="{{ product.id }}" data-stok="{{ product.stok_pusat }}">{{ product.nama }} (Stok: {{ product.stok_pusat }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="jumlah" class="form-label">Jumlah</label>
+                        <input type="number" class="form-control" id="jumlah" name="jumlah" min="1" required>
+                        <div class="form-text" id="stok-info">Stok tersedia: 0</div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('distribution_list') }}" class="btn btn-secondary me-md-2">
+                            <i class="fas fa-arrow-left"></i> Kembali
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Simpan
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('product_id').addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        const stok = selectedOption.getAttribute('data-stok') || 0;
+        document.getElementById('stok-info').textContent = `Stok tersedia: ${stok}`;
+        document.getElementById('jumlah').setAttribute('max', stok);
+    });
+</script>
+{% endblock %}

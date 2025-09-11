@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h3 class="mb-0"><i class="fas fa-plus"></i> Tambah Penjualan Baru</h3>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="outlet_id" class="form-label">Outlet</label>
+                        <select class="form-select" id="outlet_id" name="outlet_id" required>
+                            <option value="">Pilih Outlet</option>
+                            {% for outlet in outlets %}
+                            <option value="{{ outlet.id }}">{{ outlet.nama }} - {{ outlet.lokasi }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="product_id" class="form-label">Produk</label>
+                        <select class="form-select" id="product_id" name="product_id" required>
+                            <option value="">Pilih Produk</option>
+                            {% for product in products %}
+                            <option value="{{ product.id }}">{{ product.nama }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="jumlah_terjual" class="form-label">Jumlah Terjual</label>
+                        <input type="number" class="form-control" id="jumlah_terjual" name="jumlah_terjual" min="1" required>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('sales_list') }}" class="btn btn-secondary me-md-2">
+                            <i class="fas fa-arrow-left"></i> Kembali
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Simpan
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const productSelect = document.getElementById('product_id');
+    const outletSelect = document.getElementById('outlet_id');
+    const quantityInput = document.getElementById('jumlah_terjual');
+    const infoDiv = document.createElement('div');
+    infoDiv.className = 'alert alert-info mt-3';
+    infoDiv.id = 'billInfo';
+    quantityInput.parentNode.appendChild(infoDiv);
+    
+    function calculateBill() {
+        const outletId = outletSelect.value;
+        const productId = productSelect.value;
+        const quantity = quantityInput.value;
+        
+        if (!outletId || !productId || !quantity) {
+            infoDiv.innerHTML = 'Pilih outlet, produk, dan jumlah untuk melihat perkiraan tagihan';
+            return;
+        }
+        
+        // Ambil data harga dan komisi dari option
+        const productOption = productSelect.options[productSelect.selectedIndex];
+        const outletOption = outletSelect.options[outletSelect.selectedIndex];
+        
+        const price = parseFloat(productOption.getAttribute('data-price') || 0);
+        const commissionRate = parseFloat(outletOption.getAttribute('data-commission') || 0) / 100;
+        
+        const tagihan = quantity * price;
+        const komisi = tagihan * commissionRate;
+        const yangHarusDibayar = tagihan - komisi;
+        
+        infoDiv.innerHTML = `
+            <strong>Perkiraan Tagihan:</strong><br>
+            - Total Penjualan: Rp ${tagihan.toLocaleString('id-ID')}<br>
+            - Komisi Outlet (${commissionRate * 100}%): Rp ${komisi.toLocaleString('id-ID')}<br>
+            - Yang Harus Dibayar: <strong>Rp ${yangHarusDibayar.toLocaleString('id-ID')}</strong>
+        `;
+    }
+    
+    outletSelect.addEventListener('change', calculateBill);
+    productSelect.addEventListener('change', calculateBill);
+    quantityInput.addEventListener('input', calculateBill);
+});
+</script>

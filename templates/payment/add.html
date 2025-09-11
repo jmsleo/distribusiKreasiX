@@ -1,0 +1,130 @@
+<!-- templates/payment/add.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h3 class="mb-0"><i class="fas fa-plus"></i> Tambah Pembayaran</h3>
+            </div>
+            <div class="card-body">
+                <form method="POST" id="paymentForm">
+                    <div class="mb-3">
+                        <label for="outlet_id" class="form-label">Outlet</label>
+                        <select class="form-select" id="outlet_id" name="outlet_id" required onchange="updateBalance()">
+                            <option value="">Pilih Outlet</option>
+                            {% for outlet in outlets %}
+                            <option value="{{ outlet.id }}" 
+        data-balance="{{ data_helper.get_outlet_balance(outlet.id) }}"
+        {% if selected_outlet == outlet.id %}selected{% endif %}>
+    {{ outlet.nama }} - {{ outlet.lokasi }}
+</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Informasi Tagihan</label>
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <p class="mb-1">Total Tagihan: <strong id="outletBalance">Rp 0</strong></p>
+                                <p class="mb-0">Status: <span id="paymentStatus" class="badge bg-secondary">Pilih outlet</span></p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="jumlah_bayar" class="form-label">Jumlah Bayar</label>
+                        <input type="number" class="form-control" id="jumlah_bayar" name="jumlah_bayar" 
+                               min="1" step="0.01" required oninput="validateAmount()">
+                        <div class="form-text" id="amountHelp">Masukkan jumlah pembayaran</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="tanggal_bayar" class="form-label">Tanggal Bayar</label>
+                        <input type="date" class="form-control" id="tanggal_bayar" name="tanggal_bayar" 
+                               value="{{ now }}" required>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('payment_list') }}" class="btn btn-secondary me-md-2">
+                            <i class="fas fa-arrow-left"></i> Kembali
+                        </a>
+                        <button type="submit" class="btn btn-primary" id="submitBtn">
+                            <i class="fas fa-save"></i> Simpan Pembayaran
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateBalance() {
+    const outletSelect = document.getElementById('outlet_id');
+    const selectedOption = outletSelect.options[outletSelect.selectedIndex];
+    const balance = selectedOption.getAttribute('data-balance') || 0;
+    const balanceElement = document.getElementById('outletBalance');
+    const statusElement = document.getElementById('paymentStatus');
+    
+    // Format balance
+    balanceElement.textContent = 'Rp ' + parseFloat(balance).toLocaleString('id-ID');
+    
+    // Update status
+    if (balance > 0) {
+        statusElement.textContent = 'Belum Lunas';
+        statusElement.className = 'badge bg-warning';
+    } else {
+        statusElement.textContent = 'Lunas';
+        statusElement.className = 'badge bg-success';
+    }
+    
+    validateAmount();
+}
+
+function validateAmount() {
+    const outletSelect = document.getElementById('outlet_id');
+    const amountInput = document.getElementById('jumlah_bayar');
+    const amountHelp = document.getElementById('amountHelp');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    if (!outletSelect.value) {
+        amountHelp.textContent = 'Pilih outlet terlebih dahulu';
+        amountHelp.className = 'form-text text-danger';
+        submitBtn.disabled = true;
+        return;
+    }
+    
+    const selectedOption = outletSelect.options[outletSelect.selectedIndex];
+    const balance = parseFloat(selectedOption.getAttribute('data-balance') || 0);
+    const amount = parseFloat(amountInput.value || 0);
+    
+    if (amount <= 0) {
+        amountHelp.textContent = 'Jumlah pembayaran harus lebih dari 0';
+        amountHelp.className = 'form-text text-danger';
+        submitBtn.disabled = true;
+    } else if (amount > balance) {
+        amountHelp.textContent = `Jumlah melebihi tagihan (Rp ${balance.toLocaleString('id-ID')})`;
+        amountHelp.className = 'form-text text-danger';
+        submitBtn.disabled = true;
+    } else {
+        amountHelp.textContent = 'Jumlah pembayaran valid';
+        amountHelp.className = 'form-text text-success';
+        submitBtn.disabled = false;
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('outlet_id').addEventListener('change', updateBalance);
+    document.getElementById('jumlah_bayar').addEventListener('input', validateAmount);
+    
+    // Auto-update jika outlet sudah dipilih
+    {% if selected_outlet %}
+    updateBalance();
+    {% endif %}
+});
+</script>
+{% endblock %}

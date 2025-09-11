@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Daftar Produk{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Daftar Produk</h3>
+                    <div class="card-tools">
+                        <a href="{{ url_for('product_add') }}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-plus"></i> Tambah Produk
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if products %}
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nama Produk</th>
+                                    <th>Harga</th>
+                                    <th>Stok Pusat</th>
+                                    <th>Komisi (%)</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for product in products %}
+                                <tr>
+                                    <td>{{ product.id }}</td>
+                                    <td>{{ product.nama }}</td>
+                                    <td>Rp {{ product.harga|number_format }}</td>
+                                    <td>{{ product.stok_pusat }}</td>
+                                    <td>{{ product.persentase_komisi }}%</td>
+                                    <td>
+                                        <a href="{{ url_for('product_edit', id=product.id) }}" class="btn btn-warning btn-sm">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </a>
+                                        <a href="{{ url_for('product_delete', id=product.id) }}" class="btn btn-danger btn-sm" 
+                                           onclick="return confirm('Apakah Anda yakin ingin menghapus produk ini?')">
+                                            <i class="fas fa-trash"></i> Hapus
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> Belum ada produk yang terdaftar.
+                        <a href="{{ url_for('product_add') }}" class="btn btn-primary btn-sm ml-2">Tambah Produk Pertama</a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

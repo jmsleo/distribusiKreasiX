@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Statistik -->
+    <div class="col-md-3 mb-4">
+        <div class="card stats-card info">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="me-3">
+                        <i class="fas fa-truck-loading stats-icon"></i>
+                    </div>
+                    <div>
+                        <div class="stats-number">{{ total_distribusi }}</div>
+                        <div class="stats-label">Total Distribusi</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card stats-card warning">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="me-3">
+                        <i class="fas fa-shopping-cart stats-icon"></i>
+                    </div>
+                    <div>
+                        <div class="stats-number">{{ total_penjualan }}</div>
+                        <div class="stats-label">Total Penjualan</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card stats-card primary">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="me-3">
+                        <i class="fas fa-store stats-icon"></i>
+                    </div>
+                    <div>
+                        <div class="stats-number">{{ total_outlet }}</div>
+                        <div class="stats-label">Jumlah Outlet</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card stats-card success">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="me-3">
+                        <i class="fas fa-box stats-icon"></i>
+                    </div>
+                    <div>
+                        <div class="stats-number">{{ total_produk }}</div>
+                        <div class="stats-label">Jumlah Produk</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Data terbaru -->
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-truck-loading me-2"></i>Distribusi Terbaru</h5>
+                <a href="{{ url_for('distribution_list') }}" class="btn btn-sm btn-primary">Lihat Semua</a>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                    <table class="table table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th>Tanggal</th>
+                                <th>Outlet</th>
+                                <th>Produk</th>
+                                <th>Jumlah</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for dist in distribusi_terbaru %}
+                            <tr>
+                                <td>{{ dist.tanggal }}</td>
+                                <td>{{ dist.outlet_nama }}</td>
+                                <td>{{ dist.produk_nama }}</td>
+                                <td>{{ dist.jumlah }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center">Tidak ada data distribusi</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-shopping-cart me-2"></i>Penjualan Terbaru</h5>
+                <a href="{{ url_for('sales_list') }}" class="btn btn-sm btn-primary">Lihat Semua</a>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                    <table class="table table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th>Tanggal</th>
+                                <th>Outlet</th>
+                                <th>Produk</th>
+                                <th>Jumlah</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for sale in penjualan_terbaru %}
+                            <tr>
+                                <td>{{ sale.tanggal }}</td>
+                                <td>{{ sale.outlet_nama }}</td>
+                                <td>{{ sale.produk_nama }}</td>
+                                <td>{{ sale.jumlah_terjual }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center">Tidak ada data penjualan</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Aksi Cepat -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-bolt me-2"></i>Aksi Cepat</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-2">
+                        <a href="{{ url_for('distribution_add') }}" class="btn btn-primary w-100">
+                            <i class="fas fa-truck me-2"></i>Distribusi Baru
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{{ url_for('sales_add') }}" class="btn btn-success w-100">
+                            <i class="fas fa-cash-register me-2"></i>Input Penjualan
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{{ url_for('distribution_list') }}" class="btn btn-warning w-100">
+                            <i class="fas fa-list me-2"></i>Lihat Distribusi
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{{ url_for('sales_list') }}" class="btn btn-secondary w-100">
+                            <i class="fas fa-receipt me-2"></i>Lihat Penjualan
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
