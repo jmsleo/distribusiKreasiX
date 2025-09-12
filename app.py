@@ -604,7 +604,7 @@ def export_invoice_pdf(outlet_id):
 @app.route('/invoice/preview/<int:outlet_id>')
 @admin_required
 def preview_invoice(outlet_id):
-    """Preview invoice data before PDF export"""
+    """Preview invoice data before PDF export - FIXED: Now uses unpaid sales only"""
     try:
         start_date = request.args.get('start_date')
         end_date = request.args.get('end_date')
@@ -617,16 +617,26 @@ def preview_invoice(outlet_id):
         
         outlet_dict = dict(outlet)
         
-        # Get sales data
-        sales_data = data_helper.get_all_sales(start_date, end_date, outlet_id)
+        # FIXED: Use get_unpaid_sales instead of get_all_sales
+        # This ensures preview matches the PDF generation
+        sales_data = data_helper.get_unpaid_sales(start_date, end_date, outlet_id)
         
         if not sales_data:
-            flash('Tidak ada data penjualan untuk outlet ini dalam periode yang dipilih', 'warning')
-            return redirect(url_for('payment_list'))
+            flash('Tidak ada tagihan yang belum dibayar untuk outlet ini dalam periode yang dipilih', 'warning')
+            # Still show the preview but with empty data
+            return render_template('invoice/preview.html',
+                                 outlet=outlet_dict,
+                                 sales_data=[],
+                                 total_qty=0,
+                                 total_amount=0,
+                                 total_commission=0,
+                                 total_bill=0,
+                                 start_date=start_date,
+                                 end_date=end_date)
         
         sales_list = [dict(sale) for sale in sales_data]
         
-        # Calculate totals
+        # Calculate totals - only from unpaid sales
         total_qty = sum(int(sale.get('jumlah_terjual', 0)) for sale in sales_list)
         total_amount = sum(float(sale.get('tagihan', 0)) for sale in sales_list)
         total_commission = sum(float(sale.get('komisi', 0)) for sale in sales_list)

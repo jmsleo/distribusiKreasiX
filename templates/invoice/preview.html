@@ -38,7 +38,7 @@
                         
                         <!-- Invoice Title -->
                         <div class="text-center mb-4">
-                            <h3 style="color: #2c5aa0; font-weight: bold;">INVOICE TAGIHAN</h3>
+                            <h3 style="color: #2c5aa0; font-weight: bold;">INVOICE TAGIHAN BELUM DIBAYAR</h3>
                         </div>
                         
                         <!-- Invoice Details -->
@@ -69,9 +69,10 @@
                             </div>
                         </div>
                         
+                        {% if sales_data %}
                         <!-- Sales Details -->
                         <div class="mb-4">
-                            <h5 style="color: #2c5aa0; font-weight: bold; margin-bottom: 15px;">RINCIAN PENJUALAN</h5>
+                            <h5 style="color: #2c5aa0; font-weight: bold; margin-bottom: 15px;">RINCIAN PENJUALAN BELUM DIBAYAR</h5>
                             
                             <div class="table-responsive">
                                 <table class="table table-bordered table-striped">
@@ -140,6 +141,16 @@
                                 </table>
                             </div>
                         </div>
+                        {% else %}
+                        <!-- No unpaid sales message -->
+                        <div class="text-center mb-4" style="padding: 40px;">
+                            <div class="alert alert-success" role="alert">
+                                <h4 class="alert-heading" style="color: #2c5aa0;"><i class="fas fa-check-circle"></i> TIDAK ADA TAGIHAN YANG BELUM DIBAYAR</h4>
+                                <hr>
+                                <p class="mb-0">Semua tagihan untuk outlet ini sudah lunas. Terima kasih atas kerjasamanya!</p>
+                            </div>
+                        </div>
+                        {% endif %}
                         
                         <!-- Footer -->
                         <div class="text-center mt-5" style="color: #666; font-size: 12px;">
