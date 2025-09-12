@@ -72,7 +72,7 @@ class DataHelper:
                 )
             """)
             
-            # Create sales table
+            # Create sales table - TAMBAHKAN KOLOM is_paid
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS sales (
                     id SERIAL PRIMARY KEY,
@@ -83,8 +83,20 @@ class DataHelper:
                     tagihan DECIMAL(12,2) DEFAULT 0,
                     komisi DECIMAL(12,2) DEFAULT 0,
                     yang_harus_dibayar DECIMAL(12,2) DEFAULT 0,
+                    is_paid BOOLEAN DEFAULT FALSE,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
+            """)
+            
+            # Add is_paid column if it doesn't exist (for existing databases)
+            cursor.execute("""
+                DO $$ 
+                BEGIN
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                                 WHERE table_name='sales' AND column_name='is_paid') THEN
+                        ALTER TABLE sales ADD COLUMN is_paid BOOLEAN DEFAULT FALSE;
+                    END IF;
+                END $$;
             """)
             
             # Create users table
@@ -99,7 +111,7 @@ class DataHelper:
                 )
             """)
             
-            # Create payments table
+            # Create payments table - TAMBAHKAN KOLOM untuk tracking sales yang dibayar
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS payments (
                     id SERIAL PRIMARY KEY,
@@ -108,8 +120,20 @@ class DataHelper:
                     tanggal_bayar DATE NOT NULL,
                     tanggal_pelunasan DATE,
                     status VARCHAR(50) DEFAULT 'sebagian',
+                    sales_covered TEXT,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
+            """)
+            
+            # Add sales_covered column if it doesn't exist
+            cursor.execute("""
+                DO $$ 
+                BEGIN
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                                 WHERE table_name='payments' AND column_name='sales_covered') THEN
+                        ALTER TABLE payments ADD COLUMN sales_covered TEXT;
+                    END IF;
+                END $$;
             """)
             
             # Create indexes for better performance
@@ -118,6 +142,7 @@ class DataHelper:
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_sales_outlet ON sales(outlet_id)")
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_sales_product ON sales(produk_id)")
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_payments_outlet ON payments(outlet_id)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_sales_is_paid ON sales(is_paid)")
             
             # Insert default users if not exist
             cursor.execute("SELECT COUNT(*) FROM users WHERE username = 'admin'")
@@ -379,12 +404,12 @@ class DataHelper:
             if available_stock < quantity_sold:
                 return False, f"Stok tidak mencukupi. Tersedia: {available_stock}"
             
-            # Insert sale record
+            # Insert sale record dengan is_paid = FALSE (belum dibayar)
             query = """
-                INSERT INTO sales (outlet_id, produk_id, jumlah_terjual, tanggal, tagihan, komisi, yang_harus_dibayar)
-                VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id
+                INSERT INTO sales (outlet_id, produk_id, jumlah_terjual, tanggal, tagihan, komisi, yang_harus_dibayar, is_paid)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s) RETURNING id
             """
-            cursor.execute(query, (outlet_id, product_id, quantity_sold, sale_date, tagihan, komisi, yang_harus_dibayar))
+            cursor.execute(query, (outlet_id, product_id, quantity_sold, sale_date, tagihan, komisi, yang_harus_dibayar, False))
             result = cursor.fetchone()
             
             conn.commit()
@@ -427,27 +452,18 @@ class DataHelper:
             return 0
     
     def get_outlet_balance(self, outlet_id):
-        """Get outlet balance (total amount to be paid)"""
+        """Get outlet balance (total amount to be paid) - HANYA DARI SALES YANG BELUM DIBAYAR"""
         try:
-            # Get total yang_harus_dibayar from sales
+            # Get total yang_harus_dibayar from sales yang belum dibayar (is_paid = FALSE)
             query_sales = """
                 SELECT COALESCE(SUM(yang_harus_dibayar), 0) as total_tagihan
                 FROM sales 
-                WHERE outlet_id = %s
+                WHERE outlet_id = %s AND is_paid = FALSE
             """
             sales_result = self.execute_query(query_sales, (outlet_id,), fetch='one')
             total_tagihan = float(sales_result['total_tagihan']) if sales_result and 'total_tagihan' in sales_result else 0
             
-            # Get total payments
-            query_payments = """
-                SELECT COALESCE(SUM(jumlah_bayar), 0) as total_dibayar
-                FROM payments 
-                WHERE outlet_id = %s
-            """
-            payments_result = self.execute_query(query_payments, (outlet_id,), fetch='one')
-            total_dibayar = float(payments_result['total_dibayar']) if payments_result and 'total_dibayar' in payments_result else 0
-            
-            return max(0, total_tagihan - total_dibayar)
+            return max(0, total_tagihan)
             
         except Exception as e:
             print(f"Error calculating outlet balance: {e}")
@@ -490,7 +506,7 @@ class DataHelper:
             print(f"Error getting outlet slot info: {e}")
             return 0
     
-    # Payment methods
+    # Payment methods - DIPERBAIKI UNTUK MENANDAI SALES SEBAGAI PAID
     def get_all_payments(self, start_date=None, end_date=None, outlet_id=None):
         """Get all payments with filters"""
         query = """
@@ -514,9 +530,13 @@ class DataHelper:
         return self.execute_query(query, params, fetch='all')
     
     def record_payment(self, outlet_id, amount, payment_date):
+        """Record payment and mark corresponding sales as paid"""
+        conn = self.get_connection()
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        
         try:
             total_tagihan = self.get_outlet_balance(outlet_id)
-            print("DEBUG total_tagihan:", total_tagihan)  # debug
+            print("DEBUG total_tagihan:", total_tagihan)
 
             if total_tagihan <= 0:
                 return False, "Outlet tidak memiliki tagihan"
@@ -527,31 +547,66 @@ class DataHelper:
             if amount > total_tagihan:
                 return False, f"Jumlah pembayaran ({amount:,.0f}) melebihi total tagihan ({total_tagihan:,.0f})"
             
+            # Get unpaid sales untuk outlet ini, diurutkan berdasarkan tanggal (FIFO)
+            cursor.execute("""
+                SELECT id, yang_harus_dibayar, tanggal 
+                FROM sales 
+                WHERE outlet_id = %s AND is_paid = FALSE 
+                ORDER BY tanggal ASC
+            """, (outlet_id,))
+            unpaid_sales = cursor.fetchall()
+            
+            # Mark sales as paid berdasarkan jumlah pembayaran
+            remaining_payment = float(amount)
+            paid_sales_ids = []
+            
+            for sale in unpaid_sales:
+                sale_amount = float(sale['yang_harus_dibayar'])
+                
+                if remaining_payment >= sale_amount:
+                    # Bayar penuh untuk sale ini
+                    cursor.execute("""
+                        UPDATE sales SET is_paid = TRUE WHERE id = %s
+                    """, (sale['id'],))
+                    paid_sales_ids.append(str(sale['id']))
+                    remaining_payment -= sale_amount
+                    
+                    if remaining_payment <= 0:
+                        break
+                else:
+                    # Pembayaran tidak cukup untuk sale ini, berhenti
+                    break
+            
             # Determine status
-            if amount >= total_tagihan:
+            if remaining_payment <= 0 and self.get_outlet_balance(outlet_id) - amount <= 0:
                 status = "lunas"
                 tanggal_pelunasan = payment_date
             else:
                 status = "sebagian"
                 tanggal_pelunasan = None
             
-            query = """
-                INSERT INTO payments (outlet_id, jumlah_bayar, tanggal_bayar, tanggal_pelunasan, status)
-                VALUES (%s, %s, %s, %s, %s) RETURNING id
-            """
-            print("DEBUG query params:", outlet_id, amount, payment_date, tanggal_pelunasan, status)  # debug
+            # Record payment
+            cursor.execute("""
+                INSERT INTO payments (outlet_id, jumlah_bayar, tanggal_bayar, tanggal_pelunasan, status, sales_covered)
+                VALUES (%s, %s, %s, %s, %s, %s) RETURNING id
+            """, (outlet_id, amount, payment_date, tanggal_pelunasan, status, ','.join(paid_sales_ids)))
             
-            result = self.execute_query(query, (outlet_id, amount, payment_date, tanggal_pelunasan, status), fetch='one')
-            print("DEBUG result:", result)  # debug
+            result = cursor.fetchone()
+            print("DEBUG result:", result)
+            
+            conn.commit()
             
             if result:
-                return True, "Pembayaran berhasil dicatat"
+                return True, f"Pembayaran berhasil dicatat. Sales yang dibayar: {len(paid_sales_ids)} transaksi"
             else:
                 return False, "Gagal mencatat pembayaran"
                     
         except Exception as e:
+            conn.rollback()
             import traceback; print(traceback.format_exc())
             return False, f"Error: {str(e)}"
+        finally:
+            cursor.close()
 
     
     # Report methods
@@ -570,6 +625,7 @@ class DataHelper:
                     s.tagihan,
                     s.komisi,
                     s.yang_harus_dibayar,
+                    s.is_paid,
                     COALESCE(d.total_distribusi, 0) as distribusi,
                     COALESCE(d.total_distribusi, 0) - COALESCE(sold.total_sold, 0) as sisa
                 FROM sales s
@@ -608,7 +664,8 @@ class DataHelper:
                     'total_tagihan': sum(float(row['tagihan']) for row in detailed_report),
                     'total_komisi': sum(float(row['komisi']) for row in detailed_report),
                     'total_dibayar': sum(float(row['yang_harus_dibayar']) for row in detailed_report),
-                    'total_distribusi': sum(float(row['distribusi']) for row in detailed_report)
+                    'total_distribusi': sum(float(row['distribusi']) for row in detailed_report),
+                    'total_belum_dibayar': sum(float(row['yang_harus_dibayar']) for row in detailed_report if not row['is_paid'])
                 }
             else:
                 summary = {
@@ -616,7 +673,8 @@ class DataHelper:
                     'total_tagihan': 0,
                     'total_komisi': 0,
                     'total_dibayar': 0,
-                    'total_distribusi': 0
+                    'total_distribusi': 0,
+                    'total_belum_dibayar': 0
                 }
             
             return detailed_report, summary
