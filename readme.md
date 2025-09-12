@@ -1,178 +1,90 @@
-# Sistem Distribusi Produk
+# Fitur Ekspor Invoice PDF
 
-Web application untuk mengelola distribusi produk ke outlet dengan sistem komisi per produk menggunakan Flask dan PostgreSQL.
+## Deskripsi
+Fitur ini memungkinkan ekspor invoice tagihan outlet ke dalam format PDF dengan desain yang menarik dan profesional.
 
-## Fitur Utama
+## Fitur yang Ditambahkan
 
-- **Manajemen Outlet**: CRUD outlet dengan slot maksimal
-- **Manajemen Produk**: CRUD produk dengan komisi per produk (bukan per outlet)
-- **Distribusi**: Pencatatan distribusi produk ke outlet
-- **Penjualan**: Pencatatan penjualan dengan perhitungan otomatis tagihan dan komisi
-- **Pembayaran**: Pencatatan pembayaran dari outlet
-- **Laporan**: Laporan lengkap penjualan dan komisi
-- **User Management**: Admin dan karyawan dengan role-based access
+### 1. Generator PDF Invoice (`utils/pdf_generator.py`)
+- Membuat invoice PDF dengan format kertas HVS normal (A4)
+- Desain yang senada dengan tema web
+- Kop surat "Yobels Salatiga" dengan informasi kontak lengkap:
+  - Instagram: @abonyobels
+  - WhatsApp: +62 821-3855-8731
+  - Tokopedia: Abon Yobels
+  - Shopee: Abon Yobels
 
-## Perubahan dari Versi Sebelumnya
+### 2. Route Baru di Flask App
+- `/invoice/preview/<outlet_id>` - Preview invoice sebelum download
+- `/invoice/export/<outlet_id>` - Download PDF invoice
 
-### 1. Database: Excel → PostgreSQL
-- Menggunakan PostgreSQL untuk production-ready deployment
-- Performa lebih baik dan concurrent access
-- Data integrity dan ACID compliance
+### 3. Template Preview Invoice
+- `templates/invoice/preview.html` - Halaman preview invoice
+- Desain responsif dengan styling yang menarik
+- Fungsi print untuk cetak langsung
 
-### 2. Komisi: Per Outlet → Per Produk
-- Setiap produk memiliki persentase komisi sendiri
-- Lebih fleksibel dalam penetapan margin keuntungan
-- Tabel `outlets` tidak lagi memiliki kolom `persentase_komisi`
-- Tabel `products` sekarang memiliki kolom `persentase_komisi`
+### 4. Integrasi dengan Payment List
+- Tombol "Preview" dan "PDF" pada setiap outlet yang memiliki tagihan
+- Filter berdasarkan tanggal untuk periode tertentu
 
-## Instalasi
+## Cara Penggunaan
 
-### Prerequisites
-- Python 3.11+
-- PostgreSQL 12+
+1. **Melalui Halaman Pembayaran:**
+   - Buka menu "Pembayaran"
+   - Pada tabel "Ringkasan Tagihan Outlet", klik tombol:
+     - "Preview" untuk melihat preview invoice
+     - "PDF" untuk langsung download PDF
 
-### Setup Development
+2. **Filter Periode:**
+   - Gunakan filter tanggal untuk membuat invoice periode tertentu
+   - Kosongkan filter untuk semua periode
 
-1. Clone repository dan masuk ke direktori:
-```bash
-cd minimalist
-```
+3. **Preview Invoice:**
+   - Klik "Preview" untuk melihat tampilan invoice
+   - Dari halaman preview, bisa langsung download PDF
+   - Bisa juga print langsung dengan Ctrl+P
 
-2. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
+## Format Invoice
 
-3. Setup PostgreSQL:
-```sql
--- Login ke PostgreSQL sebagai superuser
-CREATE DATABASE distribusi_produk;
-CREATE USER your_username WITH PASSWORD 'your_password';
-GRANT ALL PRIVILEGES ON DATABASE distribusi_produk TO your_username;
-```
+### Header
+- Logo/Nama: "Yobels Salatiga"
+- Informasi kontak lengkap
+- Nomor invoice otomatis: INV-YYYYMMDD-NNNN
 
-4. Setup environment variables:
-```bash
-cp .env.example .env
-# Edit .env dengan kredensial database Anda
-```
+### Detail Invoice
+- Informasi outlet (nama, lokasi, kontak)
+- Tabel rincian penjualan per produk
+- Kolom: No, Tanggal, Produk, Qty, Harga Satuan, Total, Komisi, Tagihan
 
-5. Initialize database:
-```bash
-python init_db.py
-```
+### Ringkasan
+- Total penjualan
+- Total komisi
+- **Total yang harus dibayar** (highlighted)
 
-6. Run development server:
-```bash
-python app.py
-```
+### Footer
+- Ucapan terima kasih
+- Timestamp pembuatan
+- Informasi kontak untuk pertanyaan
 
-### Setup Production
+## Dependencies Baru
+- `reportlab` - Library untuk generate PDF
 
-1. Set environment variables:
-```bash
-export FLASK_ENV=production
-export DATABASE_URL=postgresql://user:password@host:port/database
-export SECRET_KEY=your-secret-key-here
-```
+## File yang Dimodifikasi
+1. `app.py` - Menambah route dan import PDF generator
+2. `templates/payment/list.html` - Menambah tombol export
+3. `utils/pdf_generator.py` - File baru untuk generate PDF
+4. `templates/invoice/preview.html` - Template preview baru
 
-2. Initialize database:
-```bash
-python init_db.py
-```
+## Styling dan Desain
+- Warna tema: #2c5aa0 (biru profesional)
+- Font: Helvetica untuk keterbacaan optimal
+- Layout responsif dan print-friendly
+- Tabel dengan styling yang jelas dan mudah dibaca
 
-3. Run with Gunicorn:
-```bash
-gunicorn app:app
-```
+## Error Handling
+- Validasi outlet exists
+- Validasi data penjualan tersedia
+- Error message yang informatif
+- Fallback untuk data yang tidak lengkap
 
-## Default Login
-
-- **Admin**: username=`admin`, password=`admin123`
-- **Karyawan**: username=`karyawan`, password=`karyawan123`
-
-## Struktur Database
-
-### Tables
-
-1. **outlets** - Data outlet
-   - id, nama, lokasi, kontak, slot_maksimal
-
-2. **products** - Data produk dengan komisi
-   - id, nama, harga, stok_pusat, **persentase_komisi**
-
-3. **distributions** - Distribusi produk ke outlet
-   - id, outlet_id, produk_id, jumlah, tanggal
-
-4. **sales** - Penjualan dengan perhitungan otomatis
-   - id, outlet_id, produk_id, jumlah_terjual, tanggal, tagihan, komisi, yang_harus_dibayar
-
-5. **payments** - Pembayaran dari outlet
-   - id, outlet_id, jumlah_bayar, tanggal_bayar, status
-
-6. **users** - User management
-   - id, username, password, role
-
-## Deployment
-
-### Heroku
-```bash
-# Login ke Heroku
-heroku login
-
-# Create app
-heroku create your-app-name
-
-# Add PostgreSQL addon
-heroku addons:create heroku-postgresql:hobby-dev
-
-# Set environment variables
-heroku config:set FLASK_ENV=production
-heroku config:set SECRET_KEY=your-secret-key
-
-# Deploy
-git add .
-git commit -m "Deploy to production"
-git push heroku main
-
-# Initialize database
-heroku run python init_db.py
-```
-
-### Docker
-```dockerfile
-FROM python:3.11-slim
-
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-
-COPY . .
-
-EXPOSE 5000
-CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:5000"]
-```
-
-## API Endpoints
-
-- `/` - Dashboard admin
-- `/karyawan/dashboard` - Dashboard karyawan
-- `/outlet` - Manajemen outlet
-- `/product` - Manajemen produk (dengan komisi)
-- `/distribution` - Manajemen distribusi
-- `/sales` - Manajemen penjualan
-- `/payment` - Manajemen pembayaran
-- `/report` - Laporan
-- `/user` - User management
-
-## Kontribusi
-
-1. Fork repository
-2. Create feature branch
-3. Commit changes
-4. Push to branch
-5. Create Pull Request
-
-## License
-
-MIT License
+Fitur ini memberikan kemudahan bagi admin untuk membuat dan mengirim invoice profesional kepada outlet-outlet yang memiliki tagihan.

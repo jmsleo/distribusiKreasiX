@@ -35,7 +35,7 @@
                                 <a href="{{ url_for('user_edit', id=user.id) }}" class="btn btn-sm btn-warning">
                                     <i class="fas fa-edit"></i> Edit
                                 </a>
-                                <a href="{{ url_for('user_delete', id=user.id) }}" class="btn btn-sm btn-danger" 
+                                <a href="{{ url_for('user_delete', id=user.id) }}" class="btn btn-sm btn-danger ms-2" 
                                    onclick="return confirm('Hapus user {{ user.username }}? Tindakan ini tidak dapat dibatalkan.')">
                                     <i class="fas fa-trash"></i> Hapus
                                 </a>

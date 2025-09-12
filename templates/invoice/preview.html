@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+
+{% block title %}Preview Invoice - {{ outlet.nama }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="card-title mb-0">
+                        <i class="fas fa-file-invoice"></i> Preview Invoice - {{ outlet.nama }}
+                    </h4>
+                    <div>
+                        <a href="{{ url_for('export_invoice_pdf', outlet_id=outlet.id, start_date=start_date, end_date=end_date) }}" 
+                           class="btn btn-danger">
+                            <i class="fas fa-file-pdf"></i> Download PDF
+                        </a>
+                        <a href="{{ url_for('payment_list') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Kembali
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Invoice Preview -->
+                    <div class="invoice-preview" style="max-width: 800px; margin: 0 auto; background: white; padding: 30px; border: 1px solid #ddd;">
+                        
+                        <!-- Company Header -->
+                        <div class="text-center mb-4">
+                            <h2 style="color: #2c5aa0; font-weight: bold; margin-bottom: 10px;">Yobels Salatiga</h2>
+                            <p style="color: #666; font-size: 14px; margin-bottom: 0;">
+                                Instagram: @abonyobels | WhatsApp: +62 821-3855-8731<br>
+                                Tokopedia: Abon Yobels | Shopee: Abon Yobels
+                            </p>
+                        </div>
+                        
+                        <hr style="border-top: 2px solid #2c5aa0; margin: 20px 0;">
+                        
+                        <!-- Invoice Title -->
+                        <div class="text-center mb-4">
+                            <h3 style="color: #2c5aa0; font-weight: bold;">INVOICE TAGIHAN</h3>
+                        </div>
+                        
+                        <!-- Invoice Details -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <table class="table table-borderless">
+                                    <tr>
+                                        <td style="font-weight: bold; color: #2c5aa0; width: 120px;">No. Invoice:</td>
+                                        <td>INV-{{ moment().strftime('%Y%m%d') if moment else '20240101' }}-{{ '%04d'|format(outlet.id) }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-weight: bold; color: #2c5aa0;">Tanggal:</td>
+                                        <td>{{ moment().strftime('%d %B %Y') if moment else 'Hari ini' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-weight: bold; color: #2c5aa0;">Outlet:</td>
+                                        <td>{{ outlet.nama }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-weight: bold; color: #2c5aa0;">Lokasi:</td>
+                                        <td>{{ outlet.lokasi or '-' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-weight: bold; color: #2c5aa0;">Kontak:</td>
+                                        <td>{{ outlet.kontak or '-' }}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <!-- Sales Details -->
+                        <div class="mb-4">
+                            <h5 style="color: #2c5aa0; font-weight: bold; margin-bottom: 15px;">RINCIAN PENJUALAN</h5>
+                            
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-striped">
+                                    <thead style="background-color: #2c5aa0; color: white;">
+                                        <tr>
+                                            <th class="text-center">No.</th>
+                                            <th class="text-center">Tanggal</th>
+                                            <th>Produk</th>
+                                            <th class="text-center">Qty</th>
+                                            <th class="text-right">Harga Satuan</th>
+                                            <th class="text-right">Total</th>
+                                            <th class="text-right">Komisi</th>
+                                            <th class="text-right">Tagihan</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for sale in sales_data %}
+                                        <tr>
+                                            <td class="text-center">{{ loop.index }}</td>
+                                            <td class="text-center">
+                                                {% if sale.tanggal %}
+                                                    {% set date_str = sale.tanggal|string %}
+                                                    {{ date_str[:10] }}
+                                                {% else %}
+                                                    -
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ sale.produk_nama or '-' }}</td>
+                                            <td class="text-center">{{ sale.jumlah_terjual or 0 }}</td>
+                                            <td class="text-right">Rp {{ (sale.harga or 0) | number_format }}</td>
+                                            <td class="text-right">Rp {{ (sale.tagihan or 0) | number_format }}</td>
+                                            <td class="text-right">Rp {{ (sale.komisi or 0) | number_format }}</td>
+                                            <td class="text-right">Rp {{ (sale.yang_harus_dibayar or 0) | number_format }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                        <tr style="background-color: #f8f9fa; font-weight: bold;">
+                                            <td colspan="3" class="text-center">TOTAL</td>
+                                            <td class="text-center">{{ total_qty }}</td>
+                                            <td></td>
+                                            <td class="text-right">Rp {{ total_amount | number_format }}</td>
+                                            <td class="text-right">Rp {{ total_commission | number_format }}</td>
+                                            <td class="text-right">Rp {{ total_bill | number_format }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <!-- Summary -->
+                        <div class="row">
+                            <div class="col-md-6 offset-md-6">
+                                <h5 style="color: #2c5aa0; font-weight: bold; margin-bottom: 15px;">RINGKASAN TAGIHAN</h5>
+                                <table class="table table-borderless">
+                                    <tr>
+                                        <td style="font-size: 16px;">Total Penjualan:</td>
+                                        <td class="text-right" style="font-size: 16px;">Rp {{ total_amount | number_format }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-size: 16px;">Total Komisi:</td>
+                                        <td class="text-right" style="font-size: 16px;">Rp {{ total_commission | number_format }}</td>
+                                    </tr>
+                                    <tr style="border-top: 2px solid #2c5aa0;">
+                                        <td style="font-size: 18px; font-weight: bold; color: #2c5aa0;">TOTAL YANG HARUS DIBAYAR:</td>
+                                        <td class="text-right" style="font-size: 18px; font-weight: bold; color: #2c5aa0;">Rp {{ total_bill | number_format }}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <!-- Footer -->
+                        <div class="text-center mt-5" style="color: #666; font-size: 12px;">
+                            <p>
+                                Terima kasih atas kerjasama Anda!<br>
+                                Invoice ini dibuat secara otomatis<br>
+                                Untuk pertanyaan, silakan hubungi kontak di atas.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+@media print {
+    .card-header, .btn, .navbar, .sidebar {
+        display: none !important;
+    }
+    
+    .invoice-preview {
+        border: none !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+        padding: 20px !important;
+    }
+    
+    body {
+        background: white !important;
+    }
+}
+
+.invoice-preview {
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    border-radius: 5px;
+}
+
+.table th {
+    font-size: 11px;
+    padding: 8px 5px;
+}
+
+.table td {
+    font-size: 10px;
+    padding: 6px 5px;
+}
+</style>
+
+<script>
+// Add print functionality
+function printInvoice() {
+    window.print();
+}
+
+// Add keyboard shortcut for print
+document.addEventListener('keydown', function(e) {
+    if (e.ctrlKey && e.key === 'p') {
+        e.preventDefault();
+        printInvoice();
+    }
+});
+</script>
+{% endblock %}

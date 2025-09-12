@@ -1,5 +1,6 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session, abort
+from flask import Flask, render_template, request, redirect, url_for, flash, session, abort, send_file
 from utils.data_helper import DataHelper
+from utils.pdf_generator import InvoicePDFGenerator
 from datetime import datetime
 from functools import wraps
 import os
@@ -12,6 +13,7 @@ config_name = os.environ.get('FLASK_ENV', 'development')
 app.config.from_object(config[config_name])
 
 data_helper = DataHelper()
+pdf_generator = InvoicePDFGenerator()
 
 # ---------------------------
 # Decorators
@@ -571,6 +573,78 @@ def payment_add():
     except Exception as e:
         flash(f'Error: {str(e)}', 'danger')
         return render_template('payment/add.html', outlets=[], selected_outlet=None)
+
+# ---------------------------
+# Invoice PDF Export Routes
+# ---------------------------
+@app.route('/invoice/export/<int:outlet_id>')
+@admin_required
+def export_invoice_pdf(outlet_id):
+    """Export invoice PDF for specific outlet"""
+    try:
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+        
+        # Generate PDF
+        pdf_buffer, filename = pdf_generator.generate_outlet_invoice(
+            data_helper, outlet_id, start_date, end_date
+        )
+        
+        return send_file(
+            pdf_buffer,
+            as_attachment=True,
+            download_name=filename,
+            mimetype='application/pdf'
+        )
+        
+    except Exception as e:
+        flash(f'Error generating invoice PDF: {str(e)}', 'danger')
+        return redirect(url_for('payment_list'))
+
+@app.route('/invoice/preview/<int:outlet_id>')
+@admin_required
+def preview_invoice(outlet_id):
+    """Preview invoice data before PDF export"""
+    try:
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+        
+        # Get outlet data
+        outlet = data_helper.get_outlet_by_id(outlet_id)
+        if not outlet:
+            flash('Outlet tidak ditemukan', 'danger')
+            return redirect(url_for('payment_list'))
+        
+        outlet_dict = dict(outlet)
+        
+        # Get sales data
+        sales_data = data_helper.get_all_sales(start_date, end_date, outlet_id)
+        
+        if not sales_data:
+            flash('Tidak ada data penjualan untuk outlet ini dalam periode yang dipilih', 'warning')
+            return redirect(url_for('payment_list'))
+        
+        sales_list = [dict(sale) for sale in sales_data]
+        
+        # Calculate totals
+        total_qty = sum(int(sale.get('jumlah_terjual', 0)) for sale in sales_list)
+        total_amount = sum(float(sale.get('tagihan', 0)) for sale in sales_list)
+        total_commission = sum(float(sale.get('komisi', 0)) for sale in sales_list)
+        total_bill = sum(float(sale.get('yang_harus_dibayar', 0)) for sale in sales_list)
+        
+        return render_template('invoice/preview.html',
+                             outlet=outlet_dict,
+                             sales_data=sales_list,
+                             total_qty=total_qty,
+                             total_amount=total_amount,
+                             total_commission=total_commission,
+                             total_bill=total_bill,
+                             start_date=start_date,
+                             end_date=end_date)
+        
+    except Exception as e:
+        flash(f'Error previewing invoice: {str(e)}', 'danger')
+        return redirect(url_for('payment_list'))
 
 # ---------------------------
 # Report Routes
