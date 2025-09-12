@@ -347,7 +347,7 @@ class DataHelper:
     def get_all_sales(self, start_date=None, end_date=None, outlet_id=None):
         """Get all sales with filters"""
         query = """
-            SELECT s.*, o.nama as outlet_nama, p.nama as produk_nama
+            SELECT s.*, o.nama as outlet_nama, p.nama as produk_nama, p.harga
             FROM sales s
             LEFT JOIN outlets o ON s.outlet_id = o.id
             LEFT JOIN products p ON s.produk_id = p.id
@@ -364,6 +364,29 @@ class DataHelper:
             params.append(outlet_id)
         
         query += " ORDER BY s.tanggal DESC"
+        
+        return self.execute_query(query, params, fetch='all')
+    
+    def get_unpaid_sales(self, start_date=None, end_date=None, outlet_id=None):
+        """Get ONLY unpaid sales - UNTUK INVOICE"""
+        query = """
+            SELECT s.*, o.nama as outlet_nama, p.nama as produk_nama, p.harga
+            FROM sales s
+            LEFT JOIN outlets o ON s.outlet_id = o.id
+            LEFT JOIN products p ON s.produk_id = p.id
+            WHERE s.is_paid = FALSE
+        """
+        params = []
+        
+        if start_date and end_date:
+            query += " AND DATE(s.tanggal) BETWEEN %s AND %s"
+            params.extend([start_date, end_date])
+        
+        if outlet_id:
+            query += " AND s.outlet_id = %s"
+            params.append(outlet_id)
+        
+        query += " ORDER BY s.tanggal ASC"  # Oldest first for invoice
         
         return self.execute_query(query, params, fetch='all')
     
@@ -578,7 +601,8 @@ class DataHelper:
                     break
             
             # Determine status
-            if remaining_payment <= 0 and self.get_outlet_balance(outlet_id) - amount <= 0:
+            new_balance = self.get_outlet_balance(outlet_id)
+            if new_balance - amount <= 0:
                 status = "lunas"
                 tanggal_pelunasan = payment_date
             else:
