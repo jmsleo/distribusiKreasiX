@@ -345,8 +345,8 @@ Distributed under the MIT License. See `LICENSE` for more information.
 Jika Anda memiliki pertanyaan atau membutuhkan bantuan:
 
 - 📧 **Email**: support@example.com
-- 💬 **Issues**: [GitHub Issues](https://github.com/username/repo/issues)
-- 📖 **Documentation**: [Wiki](https://github.com/username/repo/wiki)
+- 💬 **Issues**: [GitHub Issues](https://github.com/jmsleo/distribusiKreasiX/issues)
+- 📖 **Documentation**: [Wiki](https://github.com/jmsleo/distribusiKreasiX/wiki)
 
 ---
 
@@ -364,6 +364,6 @@ Jika Anda memiliki pertanyaan atau membutuhkan bantuan:
 
 **⭐ Jangan lupa berikan star jika project ini membantu! ⭐**
 
-Made with ❤️ by [Your Name]
+Made with ❤️ by KreasiX
 
 </div>
