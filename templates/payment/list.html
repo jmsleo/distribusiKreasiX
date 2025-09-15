@@ -106,7 +106,7 @@
                                     <th>Tanggal Bayar</th>
                                     <th>Tanggal Pelunasan</th>
                                     <th>Status</th>
-                                    <th class="text-right">Sisa Tagihan</th>
+
                                 </tr>
                             </thead>
                             <tbody>
@@ -123,14 +123,6 @@
                                                 <span class="badge status-lunas">Lunas</span>
                                             {% else %}
                                                 <span class="badge status-belum">Sebagian</span>
-                                            {% endif %}
-                                        </td>
-                                        <td class="text-right">
-                                            {% set sisa_tagihan = outlet_balances.get(payment.outlet_id, 0) %}
-                                            {% if sisa_tagihan > 0 %}
-                                                <span class="badge status-belum">Rp {{ sisa_tagihan | number_format }}</span>
-                                            {% else %}
-                                                <span class="badge status-lunas">Lunas</span>
                                             {% endif %}
                                         </td>
                                     </tr>
